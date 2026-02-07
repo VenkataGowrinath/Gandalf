@@ -1,4 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
+import {
+  Button,
+  Input,
+  Select,
+  SelectItem,
+  Chip,
+} from '@heroui/react';
 import type {
   Group,
   CommunityMember,
@@ -35,7 +42,7 @@ function getMockAIResponse(
   }
   if (userMessage.trim())
     return `Understood. Regarding ${name} and "${intent}": I've noted your question. In a full version, the proxy would share more context from ${name}'s trip.`;
-  return `Here’s the contextual status for ${name} (${intent}). Anything else you’d like to know?`;
+  return `Here's the contextual status for ${name} (${intent}). Anything else you'd like to know?`;
 }
 
 interface AIChatboxProps {
@@ -58,23 +65,20 @@ export function AIChatbox({
   const [selectedIntent, setSelectedIntent] = useState<IntentOption | null>(
     'Safety Status'
   );
-  const [selectedMember, setSelectedMember] = useState<CommunityMember | null>(
-    null
-  );
-  const [memberDropdownOpen, setMemberDropdownOpen] = useState(false);
+  const [selectedMemberKey, setSelectedMemberKey] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const members = group.members;
+  const selectedMember =
+    members.find((m) => m.id === selectedMemberKey) ?? members[0] ?? null;
 
   useEffect(() => {
     if (isOpen) {
-      const member = initialMemberId
-        ? members.find((m) => m.id === initialMemberId) ?? members[0]
-        : members[0];
-      setSelectedMember(member ?? null);
+      const key = initialMemberId ?? members[0]?.id ?? null;
+      setSelectedMemberKey(key);
       setSelectedIntent(initialIntent ?? 'Safety Status');
       inputRef.current?.focus();
     }
@@ -118,139 +122,134 @@ export function AIChatbox({
   if (!isOpen) return null;
 
   return (
-    <div className="safe-bottom absolute inset-x-0 bottom-0 z-30 flex max-h-[70vh] flex-col rounded-t-3xl border-t border-slate-200/80 bg-white/95 shadow-[0_-8px_32px_rgba(139,92,246,0.08)] backdrop-blur-xl">
-      <button
-        type="button"
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+        aria-hidden
         onClick={onClose}
-        className="absolute right-3 top-3 z-10 rounded-xl p-2.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-        aria-label="Close"
+      />
+      {/* Bottom sheet - AI Chat */}
+      <div
+        className="safe-bottom fixed inset-x-0 bottom-0 z-50 flex max-h-[70vh] flex-col rounded-t-3xl border-t border-default-200 bg-white shadow-[0_-8px_32px_rgba(0,0,0,0.12)]"
+        role="dialog"
+        aria-label="AI assistant chat"
       >
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-
-      <div className="flex-1 overflow-y-auto px-4 pt-6 pb-4">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Tell me about the current
-        </p>
-        <div className="mb-3 flex flex-wrap gap-2">
-          {INTENT_OPTIONS.map((intent) => (
-            <button
-              key={intent}
-              type="button"
-              onClick={() => setSelectedIntent(intent)}
-              className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-                selectedIntent === intent
-                  ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-md'
-                  : 'border border-dashed border-slate-200 bg-slate-50/80 text-slate-600 hover:border-violet-200 hover:bg-violet-50/50'
-              }`}
-            >
-              {intent}
-            </button>
-          ))}
-        </div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">of</p>
-        <div className="relative mb-4">
-          <button
-            type="button"
-            onClick={() => setMemberDropdownOpen((o) => !o)}
-            className="flex w-full items-center justify-between rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-3 text-left text-sm font-medium text-slate-700 transition hover:border-violet-200 hover:bg-violet-50/30"
+        <div className="flex items-center justify-between border-b border-default-100 px-4 py-3">
+          <p className="text-sm font-semibold text-default-700">Ask about a friend</p>
+          <Button
+            isIconOnly
+            variant="light"
+            size="sm"
+            onPress={onClose}
+            aria-label="Close"
+            className="text-default-500"
           >
-            <span className="flex items-center gap-2">
-              {selectedMember ? (
-                <>
-                  <img
-                    src={selectedMember.avatar}
-                    alt=""
-                    className="h-7 w-7 rounded-lg object-cover ring-1 ring-slate-200"
-                  />
-                  {selectedMember.name}
-                </>
-              ) : (
-                'Select User'
-              )}
-            </span>
-            <svg
-              className={`h-4 w-4 text-slate-400 transition duration-200 ${memberDropdownOpen ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
-          {memberDropdownOpen && (
-            <div className="absolute left-0 right-0 top-full z-10 mt-1.5 overflow-hidden rounded-xl border border-slate-200 bg-white py-1.5 shadow-soft">
-              {members.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedMember(m);
-                    setMemberDropdownOpen(false);
-                  }}
-                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition hover:bg-violet-50/50"
-                >
-                  <img src={m.avatar} alt="" className="h-8 w-8 rounded-lg object-cover ring-1 ring-slate-100" />
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-default-500">
+            Tell me about the current
+          </p>
+          <div className="mb-3 flex flex-wrap gap-2">
+            {INTENT_OPTIONS.map((intent) => (
+              <Chip
+                key={intent}
+                variant={selectedIntent === intent ? 'solid' : 'bordered'}
+                color={selectedIntent === intent ? 'secondary' : 'default'}
+                className="cursor-pointer"
+                onClick={() => setSelectedIntent(intent)}
+              >
+                {intent}
+              </Chip>
+            ))}
+          </div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-default-500">
+            of
+          </p>
+          <Select
+            label="Select friend"
+            placeholder="Select User"
+            selectedKeys={selectedMemberKey ? [selectedMemberKey] : []}
+            onSelectionChange={(keys) => {
+              const key = Array.from(keys)[0];
+              setSelectedMemberKey(key != null ? String(key) : null);
+            }}
+            items={members}
+            renderValue={(_items) => {
+              const m = selectedMember;
+              if (!m) return null;
+              return (
+                <div className="flex items-center gap-2">
+                  <img
+                    src={m.avatar}
+                    alt=""
+                    className="h-6 w-6 rounded-full object-cover"
+                  />
                   {m.name}
-                </button>
+                </div>
+              );
+            }}
+            className="mb-4"
+          >
+            {(m) => (
+              <SelectItem key={m.id} textValue={m.name}>
+                <div className="flex items-center gap-2">
+                  <img
+                    src={m.avatar}
+                    alt=""
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                  {m.name}
+                </div>
+              </SelectItem>
+            )}
+          </Select>
+
+          {messages.length > 0 && (
+            <div className="space-y-3 border-t border-default-100 pt-3">
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                      msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-default-100 text-default-800'
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </div>
 
-        {messages.length > 0 && (
-          <div className="space-y-3 border-t border-slate-100 pt-3">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                    msg.role === 'user'
-                      ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-md'
-                      : 'bg-slate-100 text-slate-800'
-                  }`}
-                >
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
+        <div className="safe-bottom flex items-center gap-2 border-t border-default-100 bg-default-50/50 px-4 py-3">
+          <Input
+            ref={inputRef}
+            classNames={{ input: 'text-sm' }}
+            placeholder="I want to know more about..."
+            value={inputValue}
+            onValueChange={setInputValue}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+          />
+          <Button color="secondary" isIconOnly onPress={handleSend} aria-label="Send">
+            <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+              <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2z" />
+              <path d="M19 14L19.8 16.2L22 17L19.8 17.8L19 20L18.2 17.8L16 17L18.2 16.2L19 14z" />
+            </svg>
+          </Button>
+        </div>
       </div>
-
-      <div
-        className="safe-bottom relative flex items-center gap-2 border-t border-slate-100 px-4 py-3"
-        style={{
-          background: 'linear-gradient(to top, rgba(253,242,248,0.6) 0%, rgba(255,255,255,0.95) 100%)',
-        }}
-      >
-        <input
-          ref={inputRef}
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="I want to know more about..."
-          className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm placeholder:text-slate-400 shadow-sm focus:border-violet-300 focus:outline-none focus:ring-2 focus:ring-violet-200"
-        />
-        <button
-          type="button"
-          onClick={handleSend}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500 to-fuchsia-500 text-white shadow-md transition hover:opacity-95 active:scale-95"
-          aria-label="Send"
-        >
-          <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-            <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2z" />
-            <path d="M19 14L19.8 16.2L22 17L19.8 17.8L19 20L18.2 17.8L16 17L18.2 16.2L19 14z" />
-            <path d="M5 4L5.6 5.6L7.2 6.2L5.6 6.8L5 8.4L4.4 6.8L2.8 6.2L4.4 5.6L5 4z" />
-          </svg>
-        </button>
-      </div>
-    </div>
+    </>
   );
 }

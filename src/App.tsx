@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { MapView } from './components/MapView';
 import { GroupHeader } from './components/GroupHeader';
-import { GroupDropdown } from './components/GroupDropdown';
 import { BottomCTAs } from './components/BottomCTAs';
 import { AIChatbox } from './components/AIChatbox';
 import { NotificationBanner } from './components/NotificationBanner';
@@ -14,7 +13,6 @@ const NOTIFICATION_DELAY_MS = 2500;
 
 function App() {
   const [currentGroupId, setCurrentGroupId] = useState(mockGroups[0].id);
-  const [groupDropdownOpen, setGroupDropdownOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [notifications, setNotifications] = useState<IncomingNotification[]>([]);
   const [replyContext, setReplyContext] = useState<{
@@ -85,20 +83,10 @@ function App() {
 
       {/* Group selector header */}
       <GroupHeader
-        group={currentGroup}
-        isGroupDropdownOpen={groupDropdownOpen}
-        onToggleGroupDropdown={() => setGroupDropdownOpen((o) => !o)}
+        groups={mockGroups}
+        currentGroup={currentGroup}
+        onSelectGroup={setCurrentGroupId}
       />
-
-      {/* Group dropdown */}
-      {groupDropdownOpen && (
-        <GroupDropdown
-          groups={mockGroups}
-          currentGroupId={currentGroupId}
-          onSelectGroup={setCurrentGroupId}
-          onClose={() => setGroupDropdownOpen(false)}
-        />
-      )}
 
       {/* Incoming proxy interaction notification (Flow 3) */}
       {notifications.length > 0 && (
